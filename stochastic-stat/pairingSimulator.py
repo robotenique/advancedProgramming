@@ -16,15 +16,14 @@ def create_freq(n, N):
     order = [x for x in range(1, N + 1)]
     p_dict = {i: 0 for i in range(N + 1)}
     parity_hist = []
-    for k in range(n):
+    for _ in range(n):
         urn = [x for x in range(1, N + 1)]
         shuffle(urn) # Random order
         # Get num of pairings
         num_p = len(list(filter(lambda e: e[0] == e[1], zip(order, urn))))
         p_dict[num_p] += 1
         parity_hist.append(num_p)
-    mean = sum(xi*fi/100 for xi, fi in p_dict.items())
-
+    mean = sum((xi*fi)/n for xi, fi in p_dict.items())
     print(f"Nº pairings (i)  |   Nº repetitions with i pairings")
     for i in p_dict.keys():
         print(f"    {str(i).zfill(2)}           |            {p_dict[i]}")
