@@ -3,6 +3,7 @@
 #include <time.h>
 #define N 25000
 
+// TODO: Comment what this does
 
 void printMatrix(int **m){
   for (int i = 0; i < N; i++) {
@@ -46,6 +47,7 @@ int main(int argc, char const *argv[]) {
     for (int i = 0; i < N; i++)
     	for (int j = 0; j < N; j++)
     		mA[i][j] = rand()%((long)N*N);
+
     printf("\n ======== Test with %d x %d matrix =======\n", N, N);
     // Time of the first method
     clock_t t;
