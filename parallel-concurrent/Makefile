@@ -8,9 +8,12 @@ CFLAGS = -Wall -pedantic -O0 -std=gnu11
 .PHONY: clean
 
 
-all: m_ep01
+all: m_ep01 c_01
 
 m_ep01: m_ep01.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+c_01: challenge_01.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c %.h
@@ -22,4 +25,4 @@ m_ep01: m_ep01.o
 
 
 clean:
-	rm -f *.o *~ *.out m_ep01
+	rm -f *.o *~ *.out m_ep01 c_01
