@@ -1,0 +1,27 @@
+Aluno:  Juliano Garcia de Oliveira NºUSP: 9277086
+
+O programa em questão mede a diferença de otimização para aproveitar os níveis
+de cachês baseado em operações em uma matriz.
+É criada uma matriz com N = 15000 (15000x15000) (tamanho padrão), inicializada
+com números aleatórios entre 0 e N*N.
+
+Ambas as versões tem a mesma função: Percorrem todos os elementos da matriz, e
+vão somando em uma variável contador, e acessando os elementos da matriz e adicionando
+em uma variável qualquer ("garbage").
+
+Versão otimizada:
+    Percorre e lê os elementos na ordem linha -> coluna.
+
+Versão não-otimizada:
+    Percorre e lê os elementos na ordem coluna -> linha.
+
+Explicação da diferença:
+        A diferença é a forma como a matriz é armazenada na memória. Na linguagem C,
+    onde a ordem é "Row-major order", que é linha -> coluna, ao acessar os elementos
+    na forma m[i][j], acessamos primeiro todos os elementos da linha, e em seguida
+    vamos para a próxima. Assim, se estou acessando m[i][j], os elementos ao redor
+    m[i][j-k], ..., m[i][j+k] para algum k, estão no cache. Assim, seu acesso é
+    bem mais rápido.
+        No caso da versão sem otimização, o acesso é na forma m[j][i], ou seja,
+    coluna primeiro, e depois a linha. Desse jeito, não é aproveitado o que está
+    no cache, é preciso ir várias vezes pegar o elemento na memória.
