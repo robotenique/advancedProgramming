@@ -7,6 +7,6 @@ Challenges
 
 	The optimized version run through the matrix in a row major order, and the other in column major order. The difference obtained is due to the way that the memory is stored in the cache, making column major order much more efficient.
 
-<p align="center">
+<p align="center" width="300">
 <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/Row_and_column_major_order.svg"/>
 </p>
