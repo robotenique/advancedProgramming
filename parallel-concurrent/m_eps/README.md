@@ -1,7 +1,8 @@
-Challenges
+Programming Challenge
 ==
 **Author**: Juliano Garcia de Oliveira
 - Mini EP 01: exploring cache locality
+
 	This program hows the time difference in two routines that use the cache levels differently. The code creates a 15000x15000 matrix, which is initialized with random values from 0 to N*N.
 	Each routine search run through all elements of the matrix, and make additions in a counter, and accessing the elements of the matrix (in a *garbage* variable).
 
