@@ -1,6 +1,4 @@
-#!/bin/bash
 
-C1="
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -33,9 +31,7 @@ static double contention_test(size_t N, int T, const int v[])
     for (i = 0; i < N; ++i)
     {
         /*--*/
-"
-
-C2="
+IF IF IF IF IF IF IF IF IF 
         /*--*/
         {
             omp_set_lock(&mutex);
@@ -70,7 +66,7 @@ int main(int argc, char* argv[])
 
     if (argc != 4)
     {
-        fprintf(stdout, \"Usage: %s <vector_size> <number_of_threads>\\n \", argv[0]);
+        fprintf(stdout, "Usage: %s <vector_size> <number_of_threads>\n ", argv[0]);
         return 1;
     }
 
@@ -82,7 +78,7 @@ int main(int argc, char* argv[])
 
     if (!vector)
     {
-        fprintf(stdout, \"Failed to allocate memory. Exiting...\\n\");
+        fprintf(stdout, "Failed to allocate memory. Exiting...\n");
         return 2;
     }
 
@@ -93,45 +89,11 @@ int main(int argc, char* argv[])
     for (i = 0; i < NUM_EXEC; ++i)
         times[i] = contention_test(N, T, vector);
     if(!last)
-        fprintf(stdout, \"%lf,\",avg(NUM_EXEC, times));
+        fprintf(stdout, "%lf,",avg(NUM_EXEC, times));
     else
-        fprintf(stdout, \"%lf\\n\",avg(NUM_EXEC, times));
+        fprintf(stdout, "%lf\n",avg(NUM_EXEC, times));
 
     free(vector);
     return 0;
 }
-"
 
-###############################################################################
-
-SIZE_VECTOR=$1
-NUM_THREADS=$2
-
-generate_ifs() {
-    c_ifs=""
-#    for ((i=0; i<$1; i++)); do
-    for i in $(seq 1 $1); do
-        c_ifs+="IF "
-    done
-}
-
-generate_c() {
-    generate_ifs $1
-    echo "$C1$c_ifs$C2" > $2
-}
-
-run_for_if() {
-    #for ((num_ifs=0; num_ifs<9; num_ifs++)); do
-    for num_ifs in $(seq 0 9); do
-        generate_c $num_ifs "temp.c"
-        gcc -Wall -O0 -std=c99 -fopenmp -o temp temp.c
-        ./temp $1 $2 $num_ifs
-    done
-}
-
-if [ -z "$SIZE_VECTOR" ] || [ -z "$NUM_THREADS" ]; then
-    echo "Usage: ${0##*/} <vector_size> <num_threads>"
-    exit
-fi
-
-run_for_if $SIZE_VECTOR $NUM_THREADS
