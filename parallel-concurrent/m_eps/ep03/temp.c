@@ -31,7 +31,7 @@ static double contention_test(size_t N, int T, const int v[])
     for (i = 0; i < N; ++i)
     {
         /*--*/
-IF IF IF IF IF IF IF IF IF 
+IF IF IF IF IF IF 
         /*--*/
         {
             omp_set_lock(&mutex);

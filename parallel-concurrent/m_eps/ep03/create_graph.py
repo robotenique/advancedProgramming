@@ -7,8 +7,9 @@ from mpl_toolkits.mplot3d import axes3d
 import math
 
 def main():
-    data = np.loadtxt('contention_data.txt', delimiter=',')
-    print(data)
+    v = 100
+    data = np.loadtxt('data_v{v}.txt', delimiter=',')
+    print(data*10e5)
     X = data[:, :3]
     X = np.column_stack((X, X[:, 2]**2))
     y = data[:, 3]
