@@ -6,7 +6,7 @@ from sys import argv
 
 def main():
     print("Algorithm  | Time (ns) | Average (of accesses) | Std (of accesses) | Times each thread entered the critical section")
-    if len(argv) < 1:
+    if len(argv) < 2:
         filename = "result_10_5000000_RR.txt"
     else:
         filename = argv[1]
@@ -15,7 +15,7 @@ def main():
     alg_gate = []
 
     for d in data:
-        new = AlgorithmTest(d, filename=filename)
+        new = AlgorithmTest(d)
         if new.alg == 1:
             alg_bakery.append(new)
         else:
