@@ -6,8 +6,9 @@
 void statistics_print_array(int n, const int v[])
 {
 	int i;
-	for (i = 0; i < n; ++i)
+	for (i = 0; i < n - 1; ++i)
 		printf("%d, ", v[i]);
+	printf("%d", v[n - 1]);
 	putchar('\n');
 }
 
@@ -42,8 +43,7 @@ void statistics_print(int n, const int v[])
 	avg = statistics_average(n, v);
 	stddev = statistics_stddev(n, v, &avg);
 
-	printf("Average of accesses: %f\n", avg);
-	printf("Standard Deviation of accesses: %f\n", stddev);
-	printf("Number of times that each thread accessed the CS:\n");
+	printf("%f, ", avg);
+	printf("%f, ", stddev);
 	statistics_print_array(n, v);
 }

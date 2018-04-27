@@ -19,16 +19,16 @@
 /* This defines the scheduler that will be used to schedule the threads.
  * There are several possibilities for this value, as specified in
  * 'man sched', but here is some interesting ones:
- * 
+ *
  *    SCHED_OTHER - The default OS scheduler. Usually this is the
- *  'Complete Fair Scheduler' in Linux, but maybe your distro replaced it by another 
+ *  'Complete Fair Scheduler' in Linux, but maybe your distro replaced it by another
  *  algorithm, like the 'MuQQS'. FreeBSD also sets a different scheduler.
  *    SCHED_FIFO  - A First In First Out scheduler. Requires sudo.
- *    SCHED_RR    - Round Robin scheduler. Like the FIFO, but defines a quantum 
- *  for the threads and forces a context switch after this quantum elapses. 
+ *    SCHED_RR    - Round Robin scheduler. Like the FIFO, but defines a quantum
+ *  for the threads and forces a context switch after this quantum elapses.
  *  Maybe this is the fairest algorithm for this problem. Requires sudo.
 */
-#define OS_SCHEDULER SCHED_OTHER
+#define OS_SCHEDULER SCHED_RR
 
 static int64_t total_time = 0;
 static int num_threads = 0;
@@ -62,7 +62,7 @@ void* consume_cpu(void* args)
         }
         lock_unlock(my_id);
     }
-    
+
     return NULL;
 }
 
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
                 printf("So many threads that I panicked!\n");
                 return 2;
             }
-        
+
             memset(num_accesses, 0x00, num_threads*sizeof(int));
             total_time = param_total_time;
 
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
                 int scheduler = OS_SCHEDULER;
                 int priority = sched_get_priority_max(scheduler);
                 struct sched_param param = {.sched_priority = priority};
-                
+
                 if (pthread_create(&threads[i], NULL, &consume_cpu, (void*) i))
                 {
                     printf("Unable to create thread %d, exiting...\n", i);
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
                 if (pthread_setschedparam(threads[i], scheduler, &param))
                     printf("WARNING: Unable to change the thread scheduling policy!\n");
             }
-            
+
             pthread_barrier_wait(&barrier);
 
             time1 = get_time();
@@ -142,12 +142,17 @@ int main(int argc, char* argv[])
                 exit(1);
             }
 
-            printf("---------------------\n");
-            printf("Algorithm: %s, Execution number: %d\n", name, k+1);
-            printf("Elapsed time (in nanoseconds): %lu\n", (time2-time1));
+            int alg_type;
+            if(!strcmp(name, "bakery"))
+                alg_type = 1;
+            else
+                alg_type = 2;
+
+            printf("%d, ", alg_type);
+            printf("%lu, ", (time2-time1));
             statistics_print(num_threads, num_accesses);
-            printf("---------------------\n");
-        }   
+
+        }
     }
     return 0;
 }
