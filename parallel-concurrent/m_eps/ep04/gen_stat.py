@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from collections import namedtuple
+import scipy.stats as st
 from sys import argv
 
 def main():
@@ -28,11 +29,19 @@ def main():
 def thread_access_plot(alg_tests):
     num_threads = alg_tests[0].threads
     accesses = []
+    times = []
     for alg_t in alg_tests:
         accesses.append(alg_t.accesses)
+        times.append(alg_t.time)
+    times = np.array(times)*1e-3
+    print(np.std(times))
+    times = get_CI(times)
     accesses = np.array(accesses)
     stds = np.sqrt(np.std(accesses, axis=0))
     accesses = np.sum(accesses, axis=0)*1/len(alg_tests)
+    std_mean = np.std(accesses)
+
+    print(f"Standard Deviation: {std_mean}, mean ={np.mean(accesses)}, Time conf interval (95%) = {times}")
     fig, ax = plt.subplots()
     index = np.arange(num_threads) + 1
     bar_width = 0.8
@@ -55,6 +64,15 @@ def thread_access_plot(alg_tests):
 
     plt.show()
 
+def get_CI(v, opt=False):
+    # If opt == true, returns the 't' value, not the [avg - t, avg + t]
+    if opt:
+        ci = st.t.interval(0.95, len(v) - 1, loc=np.mean(v), scale=st.sem(v))
+        arr = [0, 0]
+        arr[0] = np.mean(v) - ci[0]
+        arr[1] =ci[1] - np.mean(v)
+        return arr #[t, t]
+    return st.t.interval(0.95, len(v) - 1, loc=np.mean(v), scale=st.sem(v))
 
 class AlgorithmTest(object):
     def __init__(self, experiment, filename=""):
