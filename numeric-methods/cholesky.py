@@ -9,7 +9,7 @@ def main():
                   [3, 5, 19]], dtype=float)
     L = cholesky(A)
     print(f"L = \n {L}")
-    print(f"LL.T = \n{L@L.T}")
+    print(f"L@L.T = \n{L@L.T}")
     print(f"A = \n{A}")
 
 def cholesky(A):
@@ -23,6 +23,3 @@ def cholesky(A):
 
 if __name__ == '__main__':
     main()
-
-
-

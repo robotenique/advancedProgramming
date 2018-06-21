@@ -2,9 +2,8 @@ import numpy as np
 
 def main():
     A  = np.array(((
-    (3, 64, 4),
-    (4, 0, 4),
-    (24,9, 34)
+    (3, 4),
+    (4, 0)
     )))
 
     #A = np.abs(np.floor(np.random.randn(10, 10)*10))
@@ -33,7 +32,7 @@ def get_householder(a):
     v = a/(a[0] + np.copysign(norm(a), a[0]))
     v[0] = 1
     print(v)
-    H -= (2/np.dot(v, v))*np.dot(v[:, None], v[None, :])
+    H -= (2/np.dot(v, v))*np.outer(v, v)
 
     return H
 
