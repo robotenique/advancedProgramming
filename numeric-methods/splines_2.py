@@ -721,7 +721,8 @@ def get_points(m_data, n_splines, x_min=0, x_max=1):
 
 def main():
   # Testing the get points
-  t, x_t, spl_t = get_points(100, 16, 0, 10)
+  num_splines = 16
+  t, x_t, spl_t = get_points(100, num_splines, 0, 10)
   plt.scatter(t, x_t, label="Simulated with noise", color=np.random.rand(3,))
   plt.plot(t, spl_t, label="Original data")
   plt.xlabel("t")
@@ -729,7 +730,12 @@ def main():
   plt.title("Dados gerados")
   plt.legend(loc="upper right")
   plt.show()
-  default_spl = spline(np.ones(16), x_min=np.min(t), x_max=np.max(t))
+  default_spl = spline(np.ones(num_splines), x_min=np.min(t), x_max=np.max(t))
+  get_spl = np.vectorize(lambda i: np.array([default_spl.beta_j(j, i) for j in range(num_splines)]))
+  m_1 = get_spl(t)
+  print(m_1)
+  print(t)
+  print("EAE KARAIO")
   # TODO: implement matrix mu
 
 
