@@ -44,7 +44,7 @@ class spline:
       dt -= bin
       return [dt,bin]
 
-
+  # Hardcoded Splines
     def piece_0_0(self, x):
       return  240 - x * (720 - x * (720 - x * 240))
 
