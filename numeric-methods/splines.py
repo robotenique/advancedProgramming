@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import functools
 
 ###############################################################################
 #
@@ -12,12 +13,13 @@ import matplotlib.pyplot as plt
 
 class spline:
 
-# spline with support in [x_min,x_max] and n >= 8 intervals
+# spline with support in [x_min,x_max] and n >= 10 weights,
+# which correspond to n - 3 intervals
 
     def __init__(self, weights, x_min = 0, x_max = 1):
       assert x_max > x_min, 'x_max must be greater than x_min'
       assert type(weights) == np.ndarray, 'weight must be a numpy array'
-      assert len(weights) >= 8, 'there must be at least 8 weights'
+      assert len(weights) >= 10, 'there must be at least 10 weights'
       dx = x_max - x_min
       self.n = len(weights) - 3
       self.scale = self.n/dx
@@ -29,22 +31,20 @@ class spline:
       if t <= self.x_min:
         return [0.0, 0]
 
-      nw = len(self.weights)
-
       if t >= self.x_max:
-        return [1.0, nw - 4]
+        return [1.0, self.n - 1]
 
       dt = self.scale * (t - self.x_min)
 
-      if dt >= nw:
+      if dt >= self.n:
         dt = 1.0
-        return [1.0, nw - 1]
+        return [1.0, self.n - 1]
 
       bin = int(np.floor(dt))
       dt -= bin
       return [dt,bin]
 
-  # Hardcoded Splines
+
     def piece_0_0(self, x):
       return  240 - x * (720 - x * (720 - x * 240))
 
@@ -99,7 +99,7 @@ class spline:
         if bin <= 0:
           a = self.piece_0_0(dt) * self.weights[0] + self.piece_1_0(dt) * self.weights[1]
           return a + self.piece_2_0(dt) * self.weights[2] + self.piece_3_0(dt) * self.weights[3]
-
+#
         if bin == 1:
           a = self.piece_1_1(dt) * self.weights[1] + self.piece_2_1(dt) * self.weights[2]
           return a + self.piece_3_1(dt) * self.weights[3] + self.piece_3_0(dt) * self.weights[4]
@@ -122,9 +122,114 @@ class spline:
         a = self.piece_3_3(dt) * self.weights[bin] + self.piece_4_3(dt) * self.weights[bin + 1]
         return a + self.piece_5_3(dt) * self.weights[bin + 2] + self.piece_6_3(dt) * self.weights[bin + 3]
 
-    # finally, the normal case 3 < bin < nw - 6
+    # finally, the normal case 3 <= bin < nw - 6
       a = self.piece_3_3(dt) * self.weights[bin] + self.piece_3_2(dt) * self.weights[bin + 1]
       return a +  self.piece_3_1(dt) * self.weights[bin + 2] + self.piece_3_0(dt) * self.weights[bin + 3]
+
+    def eval_beta_j(self, j, x):
+
+      dt, bin = self.locate(x)
+
+      if ((j < bin) or (j > bin + 3)):
+        return 0
+
+      if bin <= 2:
+        if bin <= 0:
+          if j < 2:
+            if j == 1:
+              return self.piece_1_0(dt)
+            else:
+              return self.piece_0_0(dt)
+          else:
+            if j == 2:
+              return self.piece_2_0(dt)
+            else:
+              return self.piece_3_0(dt)
+#
+        if bin == 1:
+          if j < 3:
+            if j == 1:
+              return self.piece_1_1(dt)
+            else:
+              return self.piece_2_1(dt)
+          else:
+            if j == 3:
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_3_0(dt)
+        else: # bin = 2
+          if (j < 4):
+            if (j == 2):
+              return self.piece_2_2(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if (j == 4):
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_3_0(dt)
+
+      # now bin > 2
+      nw = len(self.weights)
+      if bin >= nw - 6:
+        if bin == nw - 6:
+          if j < bin + 2:
+            if j == bin:
+              return self.piece_3_3(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if j == bin + 2:
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_4_1(dt)
+
+        if bin == nw - 5:
+          if j < bin + 2:
+            if j == bin:
+              return self.piece_3_3(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if j == bin + 2:
+              return self.piece_4_2(dt)
+            else:
+              return self.piece_5_2(dt)
+
+        # now bin = nw - 4
+        if j < bin + 2:
+          if j == bin:
+            return self.piece_3_3(dt)
+          else:
+            return self.piece_4_3(dt)
+        else:
+          if j == bin + 2:
+            return self.piece_5_3(dt)
+          else:
+            return self.piece_6_3(dt)
+
+    # finally, the normal case 3 <= bin < nw - 6
+
+      if j < bin + 2:
+        if j == bin:
+          return self.piece_3_3(dt)
+        else:
+          return self.piece_3_2(dt)
+      else:
+        if j == bin + 2:
+          return self.piece_3_1(dt)
+        else:
+          return self.piece_3_0(dt)
+
+    def beta_j(self, j, x):
+      if type(x) == np.ndarray:
+        y = x.copy()
+        for i in range(len(x)):
+          y[i] = self.eval_beta_j(j,x[i])
+        return y
+      else:
+        return self.eval_beta_j(j,x)
+
 
     def __call__(self, x):
       if type(x) == np.ndarray:
@@ -143,12 +248,13 @@ class spline:
 
 class d_spline:
 
-# the derivative of an spline with support in [x_min,x_max] and n >= 8 intervals
+# the derivative of an spline with support in [x_min,x_max] and n >= 10 intervals
+# which correspond to n -3 intervals
 
     def __init__(self, weights, x_min = 0, x_max = 1):
       assert x_max > x_min, 'x_max must be greater than x_min'
       assert type(weights) == np.ndarray, 'weight must be a numpy array'
-      assert len(weights) >= 8, 'there must be at least 8 weights'
+      assert len(weights) >= 10, 'there must be at least 10 weights'
       dx = x_max - x_min
       self.n = len(weights) - 3
       self.scale = self.n/dx
@@ -160,16 +266,14 @@ class d_spline:
       if t <= self.x_min:
         return [0.0, 0]
 
-      nw = len(self.weights)
-
       if t >= self.x_max:
-        return [1.0, nw - 4]
+        return [1.0, self.n - 1]
 
       dt = self.scale * (t - self.x_min)
 
-      if dt >= nw:
+      if dt >= self.n:
         dt = 1.0
-        return [1.0, nw - 1]
+        return [1.0, self.n - 1]
 
       bin = int(np.floor(dt))
       dt -= bin
@@ -273,12 +377,13 @@ class d_spline:
 
 class d2_spline:
 
-# the derivative of an spline with support in [x_min,x_max] and n >= 8 intervals
+# the derivative of an spline with support in [x_min,x_max] and n >= 10 weights,
+# which correspond to n - 3 intervals
 
     def __init__(self, weights, x_min = 0, x_max = 1):
       assert x_max > x_min, 'x_max must be greater than x_min'
       assert type(weights) == np.ndarray, 'weight must be a numpy array'
-      assert len(weights) >= 8, 'there must be at least 8 weights'
+      assert len(weights) >= 10, 'there must be at least 10 weights'
       dx = x_max - x_min
       self.n = len(weights) - 3
       self.scale = self.n/dx
@@ -290,16 +395,14 @@ class d2_spline:
       if t <= self.x_min:
         return [0.0, 0]
 
-      nw = len(self.weights)
-
       if t >= self.x_max:
-        return [1.0, nw - 4]
+        return [1.0, self.n - 1]
 
       dt = self.scale * (t - self.x_min)
 
-      if dt >= nw:
+      if dt >= self.n:
         dt = 1.0
-        return [1.0, nw - 1]
+        return [1.0, self.n - 1]
 
       bin = int(np.floor(dt))
       dt -= bin
@@ -386,6 +489,111 @@ class d2_spline:
       a = self.piece_3_3(dt) * self.weights[bin] + self.piece_3_2(dt) * self.weights[bin + 1]
       return a +  self.piece_3_1(dt) * self.weights[bin + 2] + self.piece_3_0(dt) * self.weights[bin + 3]
 
+    def eval_beta_j(self, j, x):
+
+      dt, bin = self.locate(x)
+
+      if ((j < bin) or (j > bin + 3)):
+        return 0
+
+      if bin <= 2:
+        if bin <= 0:
+          if j < 2:
+            if j == 1:
+              return self.piece_1_0(dt)
+            else:
+              return self.piece_0_0(dt)
+          else:
+            if j == 2:
+              return self.piece_2_0(dt)
+            else:
+              return self.piece_3_0(dt)
+#
+        if bin == 1:
+          if j < 3:
+            if j == 1:
+              return self.piece_1_1(dt)
+            else:
+              return self.piece_2_1(dt)
+          else:
+            if j == 3:
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_3_0(dt)
+        else: # bin = 2
+          if (j < 4):
+            if (j == 2):
+              return self.piece_2_2(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if (j == 4):
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_3_0(dt)
+
+      # now bin > 2
+      nw = len(self.weights)
+      if bin >= nw - 6:
+        if bin == nw - 6:
+          if j < bin + 2:
+            if j == bin:
+              return self.piece_3_3(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if j == bin + 2:
+              return self.piece_3_1(dt)
+            else:
+              return self.piece_4_1(dt)
+
+        if bin == nw - 5:
+          if j < bin + 2:
+            if j == bin:
+              return self.piece_3_3(dt)
+            else:
+              return self.piece_3_2(dt)
+          else:
+            if j == bin + 2:
+              return self.piece_4_2(dt)
+            else:
+              return self.piece_5_2(dt)
+
+        # now bin = nw - 4
+        if j < bin + 2:
+          if j == bin:
+            return self.piece_3_3(dt)
+          else:
+            return self.piece_4_3(dt)
+        else:
+          if j == bin + 2:
+            return self.piece_5_3(dt)
+          else:
+            return self.piece_6_3(dt)
+
+    # finally, the normal case 3 <= bin < nw - 6
+
+      if j < bin + 2:
+        if j == bin:
+          return self.piece_3_3(dt)
+        else:
+          return self.piece_3_2(dt)
+      else:
+        if j == bin + 2:
+          return self.piece_3_1(dt)
+        else:
+          return self.piece_3_0(dt)
+
+    def beta_j(self, j, x):
+      if type(x) == np.ndarray:
+        y = x.copy()
+        for i in range(len(x)):
+          y[i] = self.eval_beta_j(j,x[i])
+        return y
+      else:
+        return self.eval_beta_j(j,x)
+
+
     def __call__(self, x):
       if type(x) == np.ndarray:
         y = x.copy()
@@ -405,55 +613,158 @@ def curve(t, spx, spy, spz):
   ax.plot(spx(t), spy(t), spz(t))
   ax.legend()
   plt.show()
+
+# Computing the matrix m2 = integral of the square of the second derivative
+# The function we are integrating is quadratic, and Simpson's rule is
+# exact in this case
+
+def simpson_fg(f, g, a, b, n):
+  assert n % 2 == 0, 'the number of points must be even'
+
+  h = (b - a) / n
+  s = f(a) * g(a) + f(b) * g(b)
+
+  for i in range(1, n, 2):
+      fi = f(a + i * h)
+      gi = g(a + i * h)
+      s += 4 * fi * gi
+
+  for i in range(2, n-1, 2):
+      fi = f(a + i * h)
+      gi = g(a + i * h)
+      s += 2 * fi * gi
+
+  return s * h / 3
+
+# n is the number of weights, and the spline is sum_(i = 0)^(n-1) aj beta_j
+
+def matrix_m2(n):
+  na = 12
+  w = np.random.rand(na)
+  d2s = d2_spline(w, 0, na - 3)
+  a = np.zeros(shape=(na,na))
+  i = 0
+  while i < na:
+    j = i
+    bind_i = lambda z : d2s.beta_j(i,z)
+    while (j < i + 4) and (j < na):
+      bind_j = lambda z : d2s.beta_j(j,z)
+      a[i,j] = simpson_fg(bind_i, bind_j, 0, na - 3, 2 * (na - 3))
+      a[j,i] = a[i,j]
+      j = j + 1
+    i = i + 1
+
+  b = np.zeros(shape=(n,n))
+  i = 0
+  while i < 6:
+    j = 0
+    while j < i + 4:
+      b[i,j] = a[i,j]
+      b[j,i] = b[i,j]
+      j = j + 1
+    i = i + 1
+
+  while i < n - 6:
+    k = -3
+    while k < 4:
+      b[i,i + k] = a[6,6 + k]
+      b[i + k,i] = b[i,i + k]
+      k = k + 1
+    i = i + 1
+
+  while i < n:
+    k = - 3
+    while k < n - i:
+      b[i,i + k] = a[12 + (i - n), 12 + (i - n) + k]
+      b[i + k,i] = b[i,i + k]
+      k = k + 1
+    i = i + 1
+
+  #checking
+
+  i = 0
+  while i < n:
+    j = 0
+    while j < n:
+      error = abs(b[i,j] - b[n - 1 - i, n - 1-j])
+      assert error < 1.0e-5, 'bug....' + str(i) + ',' + str(j)
+      j = j + 1
+    i = i + 1
+
+
+  return 1.0e-5 * b
+
+
 """
 Some fixed data:
-weights =[ 0.71362165  0.7312819   0.28578785  0.72625597  0.02829012  0.12093212
-  0.57039311  0.07396345  0.30056213  0.72305948  0.13181418  0.39346008
-  0.27301438  0.76474467  0.86693262  0.43410863]
+weights =[0.43470768679675065, 0.70234026438735053, 0.06557777761086947, 0.1600460261762634, 0.54135062262335298, 0.050856016107522328, 0.17473709130199, 0.74161650357776676, 0.45860648789704928, 0.14159481604757318, 0.84721980315075984, 0.086969974586579846, 0.10755203343042352, 0.7009617941803733, 0.62476516555503137, 0.84680596019512555]
 
-err = [ -7.85157709 -12.92255349 -17.32423387  -0.89025862  13.13619879
-   0.57082557   8.73400619  19.15203654  -7.36949562 -17.17361854
- -11.97772227  -3.29295136  17.1989631    0.41401076  12.64912304
- -15.99940417  11.80196631  15.87606787 -17.67073401   3.23636432
-  -0.28562633   8.6316289  -17.02878288   1.79054375   2.73716767
-   3.95991511  -2.08428861 -25.13198744  -1.47526867  -2.54935011
-  10.88130686   8.15709343  14.63744526   7.47877596 -14.35635258
-  -0.43598964  -6.49773062  -5.2879045   -9.51904213  -7.55298738
-   1.75881947  -4.38373551  20.58606902  -4.34927156   2.8519147
-  -4.96762026  -8.82744649   3.53348654   6.31765094  12.27277917
-  17.34041646  -9.08565129 -13.66671513  -1.77283233  11.71713346
-   0.95528386  18.95830559   7.7191811  -15.54325112 -16.17633469
-   3.51011188  20.69877155   1.18673353  -2.1621375  -16.91327138
- -29.85700319 -27.83832409   6.82408984   0.23278505  -7.47693559
-   1.10090316  13.71523873   2.25795915  -5.35280909  -4.30512874
- -14.28870776 -33.29891759   1.02618189 -12.61151097  16.44126939
-  -0.21563856  -1.3496143   11.66052487  25.40249952  -6.86231148
- -16.4040602   -3.3531628    1.11823809   8.31014697  17.23290813
-  12.91901202 -16.17753123   2.35060184  19.67399187 -12.22543148
-  16.8739259   -7.93283968  -7.01616971   8.12422586   6.00343464]
+err = [4.0407246040420395, 17.923076414120604, -10.767841085140835, 4.1393430179930775, 10.565085709868121, -3.584372809095576, -11.774566767372946, 17.257106170388049, 2.6757461616453817, -10.527234880136081, 8.9848685270152622, -6.6169058175221496, -3.7332405500642714, -13.02819409732825, 22.750078462351926, -4.2842739152321094, 14.96757783200326, -2.4553840583728324, 18.861396668965529, -6.738813066862412, -8.4186285044590647, 7.4745396854916644, -13.559257482658458, -7.0204800255297615, 10.190792445314555, -17.823240291866707, 6.8026629126934148, 28.076870129591931, 9.1254265942523141, -11.364608723643313, 11.130477983696728, -14.425502355253265, -5.806975177393717, 2.6439377596784928, 5.9834056423728752, -44.09287902866226, 3.2457202857835865, 8.9932719431376658, -16.281282503217362, -18.738001438454987, -26.660671082997442, -8.6756844257800267, -11.304234163552247, -4.7872864657413361, 3.4258073451241695, -16.146674499028919, 9.0544681137787215, 24.848650542341094, 17.249853581359027, -0.30283797800742379, 0.37855493839974697, 4.4639944302046128, 20.225936254776382, 7.2556634177390036, 9.7897475601732431, -5.113334423387788, 7.0289069745437285, 24.19659714478404, -15.070958575128437, -11.974895353808336, -7.9217580071927234, 23.293920381732761, -6.7173190176511053, 2.1251620231213275, 3.9208470023037778, -9.2048186380279429, -12.031589993324703, 15.441730221060265, 14.197219907797001, -1.5403968817083806, 2.2266240309869718, 9.8391447338750222, -8.7659657931732315, 4.7198740432965476, -7.6448678383435258, 8.2774563718206426, 14.215887214498119, -5.8908381646577146, 6.6490880175057407, 5.4571918097483625, -9.7642109675504702, 8.7614178777467249, 7.660913381188883, -12.562982700498488, 5.5425282272514256, 20.084548902645526, -2.1418877013537481, 20.792510705733893, 26.207094680784824, -6.5188612054901851, -20.379346648258174, -34.356217384323699, 13.522426602406133, 24.637814902341464, 4.3255971858103592, -12.096729849949023, 14.903784302042354, -8.9308771583215361, 5.1727237461466506, 4.2302726340482]
+
+calculated = [0.46215165101240407, 0.72451809655289978, 0.034505942139361853, 0.20103394093477878, 0.50756752382645198, 0.10693555052448254, 0.052481669158447326, 0.78396137171634217,
+             0.50607678792654842, 0.11057751400915164, 0.88526496637460661, 0.067658833366388976, 0.16218838312986433, 0.66793335862573522, 0.65314875153266527, 0.85473860433433557]
+
 """
 
+
+def ep_labnum(t, x_t, num_splines):
+  default_spl = spline(np.ones(num_splines), x_min=t[0], x_max=t[-1])
+  mu = np.zeros((len(t), num_splines))
+  for i in range(len(t)):
+      for j in range(num_splines):
+          mu[i][j] = default_spl.beta_j(j, t[i])
+  lmbda = 5
+  m_1 = mu.T@mu
+  b = mu.T@x_t.T
+  m_2 = matrix_m2(num_splines)
+  M = m_1 + lmbda*m_2
+  res = np.linalg.solve(M, b)
+  return res
 
 def get_points(m_data, n_splines, x_min=0, x_max=1):
   t = np.linspace(x_min, x_max, m_data)
   weights = np.random.rand(n_splines)
-  spl = spline(weights, x_min=x_min, x_max=x_max)
+  weights = np.array(weights)
+  spl = spline(weights, x_min=t[0], x_max=t[-1])
   spl_t = spl(t)
-  mu, sigma = 0, np.std(spl_t)/3
+  mu, sigma = 0, np.std(spl_t) / 3
   err = np.random.normal(mu, sigma, m_data)
+  err = np.array(err)
   x_t = spl_t + err
   return t, x_t, spl_t
 
+
 def main():
   # Testing the get points
-  t, x_t, spl_t = get_points(100, 16, 0, 10)
-  plt.scatter(t, x_t, label="Simulated with noise", color=np.random.rand(3,))
-  plt.plot(t, spl_t, label="Original data")
+  num_splines = 1600
+  num_dados = 10001
+  t, x_t, spl_t = get_points(num_dados, num_splines, 0, 10)
+  t = np.linspace(0, 5, num_dados)
+  x_t = np.sin(1/t)
+  if len(t) < 1000:
+    plt.scatter(t, x_t, label="Simulated with noise", color=np.random.rand(3,))
+  #plt.plot(t, spl_t, label="Original data")
+  plt.plot(t, x_t, label="Original data")
   plt.xlabel("t")
   plt.ylabel("spl(t)")
-  plt.title("Dados gerados")
+  plt.title("Dados")
+  default_spl = spline(np.ones(num_splines), x_min=t[0], x_max=t[-1])
+  mu = np.zeros((len(t), num_splines))
+  for i in range(len(t)):
+      for j in range(num_splines):
+          mu[i][j] = default_spl.beta_j(j, t[i])
+  print(mu)
+  lmbda = 20
+  m_1 = mu.T@mu
+  b = mu.T@x_t.T
+  m_2 = matrix_m2(num_splines)
+  M = m_1 + lmbda*m_2
+  res = np.linalg.solve(M, b)
+  new_spline = spline(res, x_min=t[0], x_max=t[-1])
+  plt.plot(t, new_spline(t), label="Simulated data")
   plt.legend(loc="upper right")
   plt.show()
+
 
 
 if __name__ == '__main__':
