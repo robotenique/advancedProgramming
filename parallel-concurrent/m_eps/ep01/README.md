@@ -1,4 +1,4 @@
-Programming Challenge
+Programming analysis
 ==
 **Author**: Juliano Garcia de Oliveira
 - Mini EP 01: exploring cache locality
