@@ -11,5 +11,5 @@ Challenges
 	*OBS: the array is randomized using the [Fisher-Yates Shuffle](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle)*
 
 <p align="center">
-<img src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Entroncamento_do_Transpraia.JPG"/>
+<img src="https://upload.wikimedia.org/wikipedia/commons/c/cf/Entroncamento_do_Transpraia.JPG" width="500" height="auto" />
 </p>
